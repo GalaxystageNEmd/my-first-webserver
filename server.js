@@ -1,39 +1,36 @@
-const express = require("express");
-const app = express();
-
-app.use(express.urlencoded({ extended: true }));
-
-app.get("/", (req, res) => {
-  res.send(`
-    <form method="POST">
-      <input name="url" placeholder="https://www.youtube.com/watch?v=..." style="width:400px">
-      <button>แสดงวิดีโอ</button>
-    </form>
-  `);
+const http = require('http');
+// 1. เรียกใชงาน Pool จากไลบรารี pg สําหรับจัดการการเชื่อมตอฐานขอมูล
+const { Pool } = require('pg');
+// 2. ตั้งคาการเชื่อมตอ โดยดึง URL มาจาก Environment Variable ของ Railway
+const pool = new Pool({
+connectionString: process.env.DATABASE_URL,
 });
+const port = process.env.PORT || 3000;
+const server = http.createServer(async (req, res) => {
+res.statusCode = 200;
+res.setHeader('Content-Type', 'text/html; charset=utf-8');
 
-app.post("/", (req, res) => {
-  const url = req.body.url;
-  const match = url.match(/(?:v=|youtu\\.be\\/)([a-zA-Z0-9_-]{11})/);
-
-  if (!match) {
-    return res.send("ลิงก์ไม่ถูกต้อง");
-  }
-
-  const id = match[1];
-
-  res.send(`
-    <h2>วิดีโอ</h2>
-    <iframe
-      width="800"
-      height="450"
-      src="https://www.youtube.com/embed/${id}"
-      frameborder="0"
-      allowfullscreen>
-    </iframe>
-  `);
+try {
+// 3. ขอเชื่อมต่อและสงคําสั่ง SQL ไปดึงขอมูลจากตาราง students
+const client = await pool.connect();
+const result = await client.query('SELECT * FROM students');
+client.release(); // คนืการเชื่อมต่อเมื่อใช้งานเสร็จ
+// 4. นําข้อมูลที่ได้(result.rows) มาประกอบเป็นตาราง HTML
+let html = `<h1>ฐานขอมูลนักศึกษา (ทดสอบการเชื่อมตอ)</h1>`;
+html += `<table border="1" cellpadding="10">`;
+html += `<tr><th>69319010202</th><th>ชัยวรุตย์ ธรรมศรี</th></tr>`;
+// วนลูปนําข้อมูลแต่ละแถวมาแสดง
+result.rows.forEach(row => {
+html += `<tr><td>${row.student_id}</td><td>${row.student_name}</td></tr>`;
 });
-
-app.listen(3000, () => {
-  console.log("Server running on port 3000");
+html += `</table>`;
+res.end(html);
+} catch (err) {
+// กรณเีชื่อมต่อไม่ได้หรือเขียนชื่อตารางผิด
+console.error(err);
+res.end(`<h1>เกิดข้อผิดพลาด!</h1><p>${err.message}</p>`);
+}
+});
+server.listen(port, () => {
+console.log(`Server is running on port: ${port}`);
 });
