@@ -1,36 +1,124 @@
 const http = require('http');
-// 1. เรียกใชงาน Pool จากไลบรารี pg สําหรับจัดการการเชื่อมตอฐานขอมูล
-const { Pool } = require('pg');
-// 2. ตั้งคาการเชื่อมตอ โดยดึง URL มาจาก Environment Variable ของ Railway
-const pool = new Pool({
-connectionString: process.env.DATABASE_URL,
-});
-const port = process.env.PORT || 3000;
-const server = http.createServer(async (req, res) => {
-res.statusCode = 200;
-res.setHeader('Content-Type', 'text/html; charset=utf-8');
 
-try {
-// 3. ขอเชื่อมตอและสงคําสั่ง SQL ไปดึงขอมูลจากตาราง students
-const client = await pool.connect();
-const result = await client.query('SELECT * FROM students');
-client.release(); // คนืการเชื่อมตอเมื่อใชงานเสร็จ
-// 4. นําขอมูลที่ได(result.rows) มาประกอบเปนตาราง HTML
-let html = `<h1>ฐานขอมูลนักศึกษา (ทดสอบการเชื่อมตอ)</h1>`;
-html += `<table border="1" cellpadding="10">`;
-html += `<tr><th>รหัสนักศึกษา</th><th>ชื่อ-นามสกุล</th></tr>`;
-// วนลูปนําขอมูลแตละแถวมาแสดง
-result.rows.forEach(row => {
-html += `<tr><td>${row.69319010202}</td><td>${row.ชัยวรุตย์ ธรรมศรี}</td></tr>`;
-});
-html += `</table>`;
-res.end(html);
-} catch (err) {
-// กรณเีชื่อมต่อไม่ได้หรือเขียนชื่อตารางผิด
-console.error(err);
-res.end(`<h1>เกิดขอผิดพลาด!</h1><p>${err.message}</p>`);
+const port = process.env.PORT || 3000;
+
+const server = http.createServer((req, res) => {
+    res.statusCode = 200;
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+
+    res.end(`
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Web Server</title>
+
+<style>
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:Arial, Helvetica, sans-serif;
 }
+
+body{
+    background:linear-gradient(135deg,#0f172a,#111827,#000);
+    color:white;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    height:100vh;
+    overflow:hidden;
+}
+
+.card{
+    width:700px;
+    max-width:90%;
+    background:rgba(255,255,255,.08);
+    backdrop-filter:blur(15px);
+    border:1px solid rgba(255,255,255,.2);
+    border-radius:25px;
+    padding:40px;
+    text-align:center;
+    box-shadow:0 0 30px rgba(0,255,255,.25);
+    animation:fadeIn 1s ease;
+}
+
+h1{
+    font-size:42px;
+    color:#00eaff;
+    text-shadow:0 0 15px #00eaff;
+    margin-bottom:20px;
+}
+
+h2{
+    color:#fff;
+    margin-bottom:15px;
+}
+
+p{
+    font-size:20px;
+    line-height:1.8;
+    color:#ddd;
+}
+
+.badge{
+    display:inline-block;
+    margin-top:25px;
+    padding:12px 25px;
+    background:#00eaff;
+    color:#000;
+    font-weight:bold;
+    border-radius:50px;
+    box-shadow:0 0 20px #00eaff;
+}
+
+.footer{
+    margin-top:25px;
+    color:#aaa;
+    font-size:15px;
+}
+
+@keyframes fadeIn{
+    from{
+        opacity:0;
+        transform:translateY(30px);
+    }
+    to{
+        opacity:1;
+        transform:translateY(0);
+    }
+}
+</style>
+</head>
+
+<body>
+
+<div class="card">
+    <h1>🚀 WEB SERVER ONLINE</h1>
+
+    <h2>Node.js + Railway</h2>
+
+    <p>
+        👤 <b>นายชัยวุรตย์ ธรรมศรี</b><br>
+        🎓 รหัสนักศึกษา <b>69319010202</b>
+    </p>
+
+    <div class="badge">
+        ✅ Server Running Successfully
+    </div>
+
+    <div class="footer">
+        เครื่องแม่ข่ายกำลังทำงานปกติบน Railway
+    </div>
+</div>
+
+</body>
+</html>
+`);
 });
+
 server.listen(port, () => {
-console.log(`Server is running on port: ${port}`);
+    console.log(`Server is running! เครื่องแม่ข่ายเปิดทำงานแล้วที่ช่องทาง: ${port}`);
 });
